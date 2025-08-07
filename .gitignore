@@ -1,0 +1,13 @@
+# Entorno virtual de Python
+venv/
+.venv/
+
+
+# Archivos compilados de Python que se autogeneran
+__pycache__/
+
+# Archivo de variables de entorno con tus secretos
+.env
+
+# Historiales MD
+*.md
