@@ -4,7 +4,9 @@ from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.markdown import Markdown
 from datetime import datetime
-import sys
+from rich.live import Live
+from rich.spinner import Spinner
+import json 
 
 
 def guardar_en_historial(nombre_archivo: str, rol: str, texto: str):
@@ -43,19 +45,31 @@ def iniciar_tutor():
         "Tu tono es siempre amigable, paciente y alentador."
     )
 
+    historial_conversacion = [
+        {"role": "system", "content": prompt_sistema},
+    ]
+
+    # Ultimos 10 mensajes, en numero par para mantener pares de pregunta/respuesta
+    MAX_HiSTORIAL = 10
+
     print(
         "[dim][i]Consejo: Si necesitas escribir código, puedes hacerlo en una sola línea o describirlo.[/i][/dim]"
     )
 
     print("[yellow]Pensando la primera pregunta...[/yellow]")
     prompt_inicial_usuario = f"Quiero aprender sobre '{tema}'. Por favor, hazme la primera pregunta para empezar."
+    historial_conversacion.append({"role": "user", "content": prompt_inicial_usuario})
 
-    pregunta_actual = pedir_al_llm(
-        prompt=prompt_inicial_usuario, system_prompt=prompt_sistema
-    )
+    with Live(Spinner("dots", text="Pensando la siguiente pregunta...")) as live:
+        pregunta_actual = pedir_al_llm(
+            messages=historial_conversacion
+        )
+        
+    historial_conversacion.append({"role": "assistant", "content": pregunta_actual})    
     guardar_en_historial(nombre_historial, "Tutor", pregunta_actual)
 
-    # Bucle conversacion
+
+    # BUCLE DE CONVERSACIÓN
     while True:
         print(
             Panel(
@@ -76,20 +90,26 @@ def iniciar_tutor():
             break
 
         guardar_en_historial(nombre_historial, "Usuario", respuesta_usuario)
+        historial_conversacion.append(
+            {"role": "user", "content": respuesta_usuario}
+        )
+
+        # --- LÓGICA DE LA VENTANA DESLIZANTE ---
+        if len(historial_conversacion) > MAX_HiSTORIAL + 1:
+            historial_a_enviar = [historial_conversacion[0]] + historial_conversacion[-MAX_HiSTORIAL:]
+        else:
+            historial_a_enviar = historial_conversacion   
+
 
         print(
             "\n[yellow]Analizando tu respuesta y pensando la siguiente pregunta...[/yellow]"
         )
 
-        prompt_siguiente_pregunta = (
-            f"El tema es '{tema}'. La pregunta anterior fue: '{pregunta_actual}'. "
-            f"Mi respuesta fue: '{respuesta_usuario}'. "
-            "Por favor, evalúa mi respuesta brevemente y hazme la siguiente pregunta socrática para continuar."
-        )
-
-        pregunta_actual = pedir_al_llm(
-            prompt=prompt_siguiente_pregunta, system_prompt=prompt_sistema
-        )
+      
+        with Live(Spinner("dots", text=" Analizando y pensando la siguiente pregunta..."), transient=True) as live:
+            pregunta_actual = pedir_al_llm(messages=historial_a_enviar)
+            
+        historial_conversacion.append({"role": "assistant", "content": pregunta_actual})
         guardar_en_historial(nombre_historial, "Tutor", pregunta_actual)
 
 

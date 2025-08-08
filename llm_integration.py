@@ -10,19 +10,6 @@ from rich import print
 load_dotenv()
 
 
-# Verificar la conexión a la API de Groq y listar modelos disponibles
-# api_key = os.getenv("GROQ_API_KEY")
-# url = "https://api.groq.com/openai/v1/models"
-
-# headers = {
-#     "Authorization": f"Bearer {api_key}",
-#     "Content-Type": "application/json"
-# }
-
-# response = requests.get(url, headers=headers)
-
-# print(response.json())
-
 # --- Configuración de Proveedores en Orden de Prioridad ---
 PROVEEDORES_EN_ORDEN = [
     {
@@ -41,9 +28,9 @@ PROVEEDORES_EN_ORDEN = [
 ]
 
 
-def pedir_al_llm(prompt: str, system_prompt: str) -> str:
+def pedir_al_llm(messages: list) -> str:
     """
-    Pide una respuesta a los LLMs configurados, en orden de prioridad.
+    Pide una respuesta a los LLMs configurados, aceptando un historial de mensajes, en orden de prioridad.
     Intentará con el primer proveedor. Si falla, pasará automáticamente al siguiente.
     """
 
@@ -69,10 +56,7 @@ def pedir_al_llm(prompt: str, system_prompt: str) -> str:
 
         body = {
             "model": modelo,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt},
-            ],
+            "messages": messages,
         }
 
         try:
@@ -104,5 +88,7 @@ if __name__ == "__main__":
     system_prompt = (
         "Eres un experto en Python y debes responder de manera clara y concisa."
     )
-    respuesta = pedir_al_llm(prompt, system_prompt)
+    respuesta = pedir_al_llm(messages=[{"role": "system", "content": system_prompt},
+        {"role": "user", "content": prompt},
+        ])
     print(f"[bold green]Respuesta del LLM:[/bold green] {respuesta}")

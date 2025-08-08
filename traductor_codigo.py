@@ -3,6 +3,8 @@ from rich.panel import Panel
 from rich import print
 from rich.syntax import Syntax
 from rich.markdown import Markdown
+from rich.live import Live
+from rich.spinner import Spinner
 import sys
 
 
@@ -37,11 +39,15 @@ def iniciar_traduccion():
         f"```python\n{codigo_usuario}\n```"
     )
 
-    print(
-        "\n[yellow]Analizando el código... Contactando al LLM para obtener la explicación.[/yellow]"
-    )
+    mensajes_a_enviar = [
+        {"role": "system", "content": prompt_sistema},
+        {"role": "user", "content": prompt_usuario},
+    ]
 
-    explicacion = pedir_al_llm(prompt=prompt_usuario, system_prompt=prompt_sistema)
+
+    with Live(Spinner("bouncingBall", text="Analizando el código..."), transient=True) as live:
+        explicacion = pedir_al_llm(messages=mensajes_a_enviar)
+
 
     print(
         Panel(
